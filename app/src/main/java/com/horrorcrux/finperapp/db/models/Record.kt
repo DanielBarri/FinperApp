@@ -15,7 +15,7 @@ data class Record(
     var transactionType: String,
 
     @ColumnInfo(name = "date")
-    var transactionDate: Date,
+    var transactionDate: Date?,
 
     @ColumnInfo(name= "category")
     var category: String,
