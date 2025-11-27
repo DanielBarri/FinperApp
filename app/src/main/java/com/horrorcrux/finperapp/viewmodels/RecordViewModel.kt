@@ -11,7 +11,10 @@ import androidx.lifecycle.viewModelScope
 import com.horrorcrux.finperapp.db.RecordsDatabase
 import com.horrorcrux.finperapp.db.models.Record
 import com.horrorcrux.finperapp.repository.RecordsRepository
-import com.horrorcrux.finperapp.states.RecordFieldState
+import com.horrorcrux.finperapp.states.AmountState
+import com.horrorcrux.finperapp.states.CategoryState
+import com.horrorcrux.finperapp.states.DescriptionState
+import com.horrorcrux.finperapp.states.TransactionTypeState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -27,20 +30,17 @@ class RecordViewModel(application: Application): ViewModel() {
     private val _eventFlow = MutableSharedFlow<Event>()
     val eventFlow = _eventFlow.asSharedFlow()
 
-    private val _transactionType = mutableStateOf(RecordFieldState())
-    val transactionType: State<RecordFieldState> = _transactionType
+    private val _transactionType = mutableStateOf(TransactionTypeState())
+    val transactionType: State<TransactionTypeState> = _transactionType
 
-    private val _category = mutableStateOf(RecordFieldState())
-    val category: State<RecordFieldState> = _category
+    private val _category = mutableStateOf(CategoryState())
+    val category: State<CategoryState> = _category
 
-    private val _description = mutableStateOf(RecordFieldState())
-    val description: State<RecordFieldState> = _description
+    private val _description = mutableStateOf(DescriptionState())
+    val description: State<DescriptionState> = _description
 
-    private val _amount = mutableStateOf(RecordFieldState())
-    val amount: State<RecordFieldState> = _amount
-
-    //TODO: Pendiente resto de los formularios
-
+    private val _amount = mutableStateOf(AmountState())
+    val amount: State<AmountState> = _amount
     val all: LiveData<List<Record>>
 
     var openRecord by mutableStateOf(false)
@@ -56,9 +56,8 @@ class RecordViewModel(application: Application): ViewModel() {
 
     private fun load(id: Int?){
         viewModelScope.launch {
-            if (id !== null) {
-                repository.findById(id).also {
-                    record ->
+            if (id != null) {
+                repository.findById(id).also { record ->
                     currentId = record.id
                     _transactionType.value = transactionType.value.copy(
                         transactionType = record.transactionType
@@ -72,7 +71,6 @@ class RecordViewModel(application: Application): ViewModel() {
                     _amount.value = amount.value.copy(
                         amount = record.amount
                     )
-                    //TODO: traer nuevos campos
                 }
             } else {
                 currentId = null
@@ -80,10 +78,10 @@ class RecordViewModel(application: Application): ViewModel() {
                     transactionType = ""
                 )
                 _category.value = category.value.copy(
-                    category = "Categoria"
+                    category = ""
                 )
                 _description.value = description.value.copy(
-                    description = "Descripción"
+                    description = ""
                 )
                 _amount.value = amount.value.copy(
                     amount = 0.0
@@ -94,19 +92,28 @@ class RecordViewModel(application: Application): ViewModel() {
 
     fun onEvent(event: Event)  {
         when (event) {
-            is Event.SetRecord -> {
-               _transactionType.value = transactionType.value.copy(
+            is Event.SetTransactionType -> {
+                _transactionType.value = transactionType.value.copy(
                     transactionType = event.transactionType
-               )
-               _category.value = category.value.copy(
-                   category = event.category
-               )
-               _description.value = description.value.copy(
-                   description = event.description
-               )
-               _amount.value = amount.value.copy(
-                   amount = event.amount
-               )
+                )
+            }
+
+            is Event.SetCategory -> {
+                _category.value = category.value.copy(
+                    category = event.category
+                )
+            }
+
+            is Event.SetDescription -> {
+                _description.value = description.value.copy(
+                    description = event.description
+                )
+            }
+
+            is Event.SetAmount -> {
+                _amount.value = amount.value.copy(
+                    amount = event.amount
+                )
             }
 
             is Event.CloseRecord -> {
@@ -134,17 +141,18 @@ class RecordViewModel(application: Application): ViewModel() {
                     repository.update(Record(
                         id = currentId,
                         transactionDate = Date(),
-                        transactionType= transactionType.value.transactionType,
-                        category = category.value.category,
-                        description = description.value.description,
-                        amount = amount.value.amount))
+                        transactionType = _transactionType.value.transactionType,
+                        category = _category.value.category,
+                        description = _description.value.description,
+                        amount = _amount.value.amount
+                    ))
                 } else {
                     repository.insert(Record(
                         transactionDate = Date(),
-                        transactionType= transactionType.value.transactionType,
-                        category = category.value.category,
-                        description = description.value.description,
-                        amount = amount.value.amount
+                        transactionType = _transactionType.value.transactionType,
+                        category = _category.value.category,
+                        description = _description.value.description,
+                        amount = _amount.value.amount
                     ))
                 }
                 openRecord = false
@@ -152,9 +160,7 @@ class RecordViewModel(application: Application): ViewModel() {
                 coroutineScope.launch(Dispatchers.IO) {
                     _eventFlow.emit(Event.Save)
                 }
-
             }
-            //TODO: Me falta agregar otros posibles campos
         }
     }
 }
