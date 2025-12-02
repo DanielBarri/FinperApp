@@ -14,6 +14,7 @@ import com.horrorcrux.finperapp.repository.RecordsRepository
 import com.horrorcrux.finperapp.states.AmountState
 import com.horrorcrux.finperapp.states.CategoryState
 import com.horrorcrux.finperapp.states.DescriptionState
+import com.horrorcrux.finperapp.states.TransactionDateState
 import com.horrorcrux.finperapp.states.TransactionTypeState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +33,9 @@ class RecordViewModel(application: Application): ViewModel() {
 
     private val _transactionType = mutableStateOf(TransactionTypeState())
     val transactionType: State<TransactionTypeState> = _transactionType
+
+    private val _transactionDate = mutableStateOf(TransactionDateState())
+    val transactionDate: State<TransactionDateState> = _transactionDate
 
     private val _category = mutableStateOf(CategoryState())
     val category: State<CategoryState> = _category
@@ -62,6 +66,9 @@ class RecordViewModel(application: Application): ViewModel() {
                     _transactionType.value = transactionType.value.copy(
                         transactionType = record.transactionType
                     )
+                    _transactionDate.value = transactionDate.value.copy(
+                        transactionDate = record.transactionDate
+                    )
                     _category.value = category.value.copy(
                         category = record.category
                     )
@@ -76,6 +83,9 @@ class RecordViewModel(application: Application): ViewModel() {
                 currentId = null
                 _transactionType.value = transactionType.value.copy(
                     transactionType = ""
+                )
+                _transactionDate.value = transactionDate.value.copy(
+                    transactionDate = null
                 )
                 _category.value = category.value.copy(
                     category = ""
@@ -95,6 +105,12 @@ class RecordViewModel(application: Application): ViewModel() {
             is Event.SetTransactionType -> {
                 _transactionType.value = transactionType.value.copy(
                     transactionType = event.transactionType
+                )
+            }
+
+            is Event.SetTransactionDate -> {
+                _transactionDate.value = transactionDate.value.copy(
+                    transactionDate = event.transactionDate
                 )
             }
 
@@ -140,7 +156,7 @@ class RecordViewModel(application: Application): ViewModel() {
                 if(currentId != null){
                     repository.update(Record(
                         id = currentId,
-                        transactionDate = Date(),
+                        transactionDate = _transactionDate.value.transactionDate ?: Date(),
                         transactionType = _transactionType.value.transactionType,
                         category = _category.value.category,
                         description = _description.value.description,
@@ -148,7 +164,7 @@ class RecordViewModel(application: Application): ViewModel() {
                     ))
                 } else {
                     repository.insert(Record(
-                        transactionDate = Date(),
+                        transactionDate = _transactionDate.value.transactionDate ?: Date(),
                         transactionType = _transactionType.value.transactionType,
                         category = _category.value.category,
                         description = _description.value.description,

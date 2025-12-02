@@ -6,8 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,10 +17,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -34,13 +45,17 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.horrorcrux.finperapp.components.DatePickerComponent
+import com.horrorcrux.finperapp.db.models.Record
 import com.horrorcrux.finperapp.ui.theme.FinperAppTheme
 import com.horrorcrux.finperapp.viewmodels.Event
+import java.util.Date
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,7 +77,7 @@ class MainActivity : ComponentActivity() {
 //Definir composables de mi app
 @Preview(showBackground = true)
 @Composable
-fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", category: String = "Auto", description: String ="Gasolina", amount: Double = 1000.0, onEvent: (Event) -> Unit ={}) {
+fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", transactionDate: Date? = null, category: String = "Auto", description: String ="Gasolina", amount: Double = 1000.0, onEvent: (Event) -> Unit ={}) {
     if(openRecord){
         Dialog(
             onDismissRequest = {
@@ -119,37 +134,39 @@ fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", c
                                 verticalAlignment = Alignment.Top
                             ) {
                                 Button(
-                                    onClick = { },
+                                    onClick = { Event.SetCategory("ingreso")},
                                     modifier = Modifier
                                         .weight(1f)
-                                        .clip(RoundedCornerShape(5.dp)),
+                                        .height(50.dp)
+                                        .clip(RoundedCornerShape(25.dp)),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color(0xFF0AB74C),
                                         contentColor = Color.White
                                     ),
-                                    shape = RoundedCornerShape(5.dp)
+                                    shape = RoundedCornerShape(25.dp)
                                 ) {
                                     Text(fontSize = 20.sp,
                                         text = "Ingreso")
                                 }
                                 Spacer(modifier = Modifier.width(20.dp))
                                 Button(
-                                    onClick = { },
+                                    onClick = {Event.SetCategory("gasto") },
                                     modifier = Modifier
                                         .weight(1f)
-                                        .clip(RoundedCornerShape(5.dp)),
+                                        .height(50.dp)
+                                        .clip(RoundedCornerShape(25.dp)),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color(0xFFF94545),
                                         contentColor = Color.White
                                     ),
-                                    shape = RoundedCornerShape(5.dp)
+                                    shape = RoundedCornerShape(25.dp)
                                 ) {
                                     Text(fontSize = 20.sp,
                                         text = "Gasto")
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(30.dp))
+                            Spacer(modifier = Modifier.height(20.dp))
 
                             Text(
                                 modifier = Modifier
@@ -159,35 +176,13 @@ fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", c
                                 text = "Fecha"
                             )
                             Spacer(modifier = Modifier.height(5.dp))
-                            TextField(modifier = Modifier.fillMaxWidth()
-                                .background(
-                                    color = Color(0x332C2C2C),
-                                    shape = RoundedCornerShape(5.dp)  // Rounds all corners
-                                ),
-                                value = transactionType,
-                                onValueChange = {
-                                    onEvent(Event.SetTransactionType(it))
-                                },
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions.Default.copy(
-                                    imeAction = ImeAction.Done
-                                ),colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    disabledIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White,
-                                    cursorColor = Color.White
-                                ),
-                                textStyle = TextStyle(
-                                    fontSize = 18.sp,
-                                    color = Color.Black.copy(alpha = 0.6f),
-                                    fontWeight = FontWeight.Normal
-                                ),
-                                shape = RoundedCornerShape(5.dp)
+                            DatePickerComponent(modifier = Modifier.fillMaxWidth().height(50.dp),
+                                selectedDate = transactionDate,
+                                onDateSelected = { date ->
+                                    onEvent(Event.SetTransactionDate(date))
+                                }
                             )
-                            Spacer(modifier = Modifier.height(30.dp))
+                            Spacer(modifier = Modifier.height(20.dp))
                             Text(
                                 modifier = Modifier
                                     .fillMaxWidth(),
@@ -196,14 +191,28 @@ fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", c
                                 text = "Categoría"
                             )
                             Spacer(modifier = Modifier.height(5.dp))
-                            TextField(modifier = Modifier.fillMaxWidth()
-                                .background(
-                                    color = Color(0x332C2C2C),
-                                    shape = RoundedCornerShape(5.dp)  // Rounds all corners
-                                ),
+                            TextField(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp)
+                                    .background(
+                                        color = Color(0x332C2C2C),
+                                        shape = RoundedCornerShape(25.dp)
+                                    ),
                                 value = category,
                                 onValueChange = {
                                     onEvent(Event.SetCategory(it))
+                                },
+                                placeholder = {
+                                    Text(
+                                        text = "Ingresa la categoría",
+                                        style = TextStyle(
+                                            fontSize = 18.sp,
+                                            color = Color.White.copy(alpha = 0.6f),
+                                            textAlign = TextAlign.Center
+                                        ),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
                                 },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions.Default.copy(
@@ -214,18 +223,20 @@ fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", c
                                     unfocusedContainerColor = Color.Transparent,
                                     disabledIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
+                                    focusedIndicatorColor = Color.Transparent,
                                     focusedTextColor = Color.White,
                                     unfocusedTextColor = Color.White,
                                     cursorColor = Color.White
                                 ),
                                 textStyle = TextStyle(
                                     fontSize = 18.sp,
-                                    color = Color.Black.copy(alpha = 0.6f),
-                                    fontWeight = FontWeight.Normal
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Normal,
+                                    textAlign = TextAlign.Center
                                 ),
-                                shape = RoundedCornerShape(5.dp)
+                                shape = RoundedCornerShape(25.dp)
                             )
-                            Spacer(modifier = Modifier.height(30.dp))
+                            Spacer(modifier = Modifier.height(20.dp))
                             Text(
                                 modifier = Modifier
                                     .fillMaxWidth(),
@@ -234,14 +245,28 @@ fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", c
                                 text = "Descripción"
                             )
                             Spacer(modifier = Modifier.height(5.dp))
-                            TextField(modifier = Modifier.fillMaxWidth()
-                                .background(
-                                    color = Color(0x332C2C2C),
-                                    shape = RoundedCornerShape(5.dp)  // Rounds all corners
-                                ),
+                            TextField(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp)
+                                    .background(
+                                        color = Color(0x332C2C2C),
+                                        shape = RoundedCornerShape(25.dp)
+                                    ),
                                 value = description,
                                 onValueChange = {
                                     onEvent(Event.SetDescription(it))
+                                },
+                                placeholder = {
+                                    Text(
+                                        text = "Ingresa la descripción",
+                                        style = TextStyle(
+                                            fontSize = 18.sp,
+                                            color = Color.White.copy(alpha = 0.6f),
+                                            textAlign = TextAlign.Center
+                                        ),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
                                 },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions.Default.copy(
@@ -252,18 +277,20 @@ fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", c
                                     unfocusedContainerColor = Color.Transparent,
                                     disabledIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
+                                    focusedIndicatorColor = Color.Transparent,
                                     focusedTextColor = Color.White,
                                     unfocusedTextColor = Color.White,
                                     cursorColor = Color.White
                                 ),
                                 textStyle = TextStyle(
                                     fontSize = 18.sp,
-                                    color = Color.Black.copy(alpha = 0.6f),
-                                    fontWeight = FontWeight.Normal
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Normal,
+                                    textAlign = TextAlign.Center
                                 ),
-                                shape = RoundedCornerShape(5.dp)
+                                shape = RoundedCornerShape(25.dp)
                             )
-                            Spacer(modifier = Modifier.height(30.dp))
+                            Spacer(modifier = Modifier.height(20.dp))
                             Text(
                                 modifier = Modifier
                                     .fillMaxWidth(),
@@ -272,14 +299,28 @@ fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", c
                                 text = "Monto"
                             )
                             Spacer(modifier = Modifier.height(5.dp))
-                            TextField(modifier = Modifier.fillMaxWidth()
-                                .background(
-                                color = Color(0x332C2C2C),
-                                shape = RoundedCornerShape(5.dp)  // Rounds all corners
-                                ),
+                            TextField(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp)
+                                    .background(
+                                        color = Color(0x332C2C2C),
+                                        shape = RoundedCornerShape(25.dp)
+                                    ),
                                 value = amount.toString(),
                                 onValueChange = {
                                     onEvent(Event.SetAmount(it.toDouble()))
+                                },
+                                placeholder = {
+                                    Text(
+                                        text = "Ingresa el monto",
+                                        style = TextStyle(
+                                            fontSize = 18.sp,
+                                            color = Color.White.copy(alpha = 0.6f),
+                                            textAlign = TextAlign.Center
+                                        ),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
                                 },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions.Default.copy(
@@ -290,39 +331,98 @@ fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", c
                                     unfocusedContainerColor = Color.Transparent,
                                     disabledIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
+                                    focusedIndicatorColor = Color.Transparent,
                                     focusedTextColor = Color.White,
                                     unfocusedTextColor = Color.White,
                                     cursorColor = Color.White
                                 ),
                                 textStyle = TextStyle(
                                     fontSize = 18.sp,
-                                    color = Color.Black.copy(alpha = 0.6f),
-                                    fontWeight = FontWeight.Normal
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Normal,
+                                    textAlign = TextAlign.Center
                                 ),
-                                shape = RoundedCornerShape(5.dp)
+                                shape = RoundedCornerShape(25.dp)
                             )
                         }
-                        Row(modifier = Modifier
+                        Column(modifier = Modifier
                             .fillMaxSize()
-                            .padding(40.dp),
-                            verticalAlignment = Alignment.Bottom)
-                        { Button(
-                            onClick = {},
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(5.dp)),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF0AB74C),
-                                contentColor = Color.White
-                            ),
-                            shape = RoundedCornerShape(5.dp)
-                        ) {
-                            Text(fontSize = 20.sp,
-                                text = "Submit")
-                        }}
+                            .padding(40.dp), verticalArrangement = Arrangement.Bottom)
+                        {
+                            Button(
+                                onClick = {onEvent(Event.Save)},
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp)
+                                    .clip(RoundedCornerShape(25.dp)),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF0AB74C),
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(25.dp)
+                            ) {
+                                Text(fontSize = 20.sp,
+                                    text = "Guardar")
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Button(
+                                onClick = {onEvent(Event.CloseRecord)},
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp)
+                                    .clip(RoundedCornerShape(25.dp)),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFF94545),
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(25.dp)
+                            ) {
+                                Text(fontSize = 20.sp,
+                                    text = "Cancelar")
+                            }
+                        }
                     }
                 }
+            }
+        }
+    }
+}
 
+
+@Composable
+fun CrudScreen (
+    allRecords: List<Record>,
+    openRecord: Boolean,
+    transactionType: String,
+    transactionDate: Date,
+    category: String,
+    description: String,
+    amount: Double,
+    onEvent: (Event) -> Unit
+) {
+    Box(modifier = Modifier.fillMaxSize().padding(20.dp)){
+        LazyColumn() {
+            items(allRecords){
+                record ->
+                ListItem(
+                    headlineContent = {
+                        Text(record.transactionDate.toString())},
+                    supportingContent = {
+                        Text(record.category)
+                        Text(record.description)
+                        Text(record.amount.toString())
+                    },
+                    trailingContent = {
+                        IconButton(onClick = {onEvent(Event.Load(record.id))}) {
+                            Icon(Icons.Rounded.Edit,
+                                contentDescription = "Editar record: ${record.id}")
+                        }
+                        IconButton(onClick = {onEvent(Event.Delete(record.id))}) {
+                            Icon(Icons.Rounded.Delete,
+                                contentDescription = "Borrar record: ${record.id}")
+                        }
+                    }
+                )
             }
         }
     }
