@@ -1,5 +1,8 @@
 package com.horrorcrux.finperapp
 
+import android.annotation.SuppressLint
+import android.app.Application
+import android.graphics.drawable.Icon
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,26 +24,39 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -51,10 +67,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.horrorcrux.finperapp.components.DatePickerComponent
 import com.horrorcrux.finperapp.db.models.Record
+import com.horrorcrux.finperapp.states.TransactionTypeState
 import com.horrorcrux.finperapp.ui.theme.FinperAppTheme
 import com.horrorcrux.finperapp.viewmodels.Event
+import com.horrorcrux.finperapp.viewmodels.RecordViewModel
+import com.horrorcrux.finperapp.viewmodels.RecordViewModelFactory
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.util.Date
 
 class MainActivity : ComponentActivity() {
@@ -63,11 +88,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             FinperAppTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    Crud()
                 }
             }
         }
@@ -77,12 +102,16 @@ class MainActivity : ComponentActivity() {
 //Definir composables de mi app
 @Preview(showBackground = true)
 @Composable
-fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", transactionDate: Date? = null, category: String = "Auto", description: String ="Gasolina", amount: Double = 1000.0, onEvent: (Event) -> Unit ={}) {
+fun RecordDialog(openRecord: Boolean = true,
+                 transactionType: String = "ingreso",
+                 transactionDate: Date? = null,
+                 category: String = "",
+                 description: String ="",
+                 amount: Double = 0.0,
+                 onEvent: (Event) -> Unit ={}) {
     if(openRecord){
         Dialog(
-            onDismissRequest = {
-                onEvent(Event.CloseRecord)
-            },
+            onDismissRequest = {onEvent(Event.CloseRecord)},
             properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
             Surface(modifier = Modifier
@@ -134,13 +163,15 @@ fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", t
                                 verticalAlignment = Alignment.Top
                             ) {
                                 Button(
-                                    onClick = { Event.SetCategory("ingreso")},
+                                    onClick = {onEvent(Event.SetTransactionType("ingreso"))},
                                     modifier = Modifier
                                         .weight(1f)
                                         .height(50.dp)
                                         .clip(RoundedCornerShape(25.dp)),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF0AB74C),
+                                        containerColor = Color(0xFF0AB74C).copy(
+                                            alpha = if (transactionType == "ingreso") 1f else 0.4f
+                                        ),
                                         contentColor = Color.White
                                     ),
                                     shape = RoundedCornerShape(25.dp)
@@ -150,13 +181,15 @@ fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", t
                                 }
                                 Spacer(modifier = Modifier.width(20.dp))
                                 Button(
-                                    onClick = {Event.SetCategory("gasto") },
+                                    onClick = {onEvent(Event.SetTransactionType("gasto")) },
                                     modifier = Modifier
                                         .weight(1f)
                                         .height(50.dp)
                                         .clip(RoundedCornerShape(25.dp)),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFFF94545),
+                                        containerColor = Color(0xFFF94545).copy(
+                                            alpha = if (transactionType == "gasto") 1f else 0.4f
+                                        ),
                                         contentColor = Color.White
                                     ),
                                     shape = RoundedCornerShape(25.dp)
@@ -208,7 +241,7 @@ fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", t
                                         text = "Ingresa la categoría",
                                         style = TextStyle(
                                             fontSize = 18.sp,
-                                            color = Color.White.copy(alpha = 0.6f),
+                                            color = Color(0xFF1A1A2E).copy(alpha = 0.6f),
                                             textAlign = TextAlign.Center
                                         ),
                                         modifier = Modifier.fillMaxWidth()
@@ -224,13 +257,13 @@ fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", t
                                     disabledIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
                                     focusedIndicatorColor = Color.Transparent,
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White,
-                                    cursorColor = Color.White
+                                    focusedTextColor = Color(0xFF1A1A2E),
+                                    unfocusedTextColor = Color(0xFF1A1A2E),
+                                    cursorColor = Color(0xFF1A1A2E)
                                 ),
                                 textStyle = TextStyle(
                                     fontSize = 18.sp,
-                                    color = Color.White,
+                                    color = Color(0xFF1A1A2E),
                                     fontWeight = FontWeight.Normal,
                                     textAlign = TextAlign.Center
                                 ),
@@ -262,7 +295,7 @@ fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", t
                                         text = "Ingresa la descripción",
                                         style = TextStyle(
                                             fontSize = 18.sp,
-                                            color = Color.White.copy(alpha = 0.6f),
+                                            color = Color(0xFF1A1A2E).copy(alpha = 0.6f),
                                             textAlign = TextAlign.Center
                                         ),
                                         modifier = Modifier.fillMaxWidth()
@@ -278,13 +311,13 @@ fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", t
                                     disabledIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
                                     focusedIndicatorColor = Color.Transparent,
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White,
-                                    cursorColor = Color.White
+                                    focusedTextColor = Color(0xFF1A1A2E),
+                                    unfocusedTextColor = Color(0xFF1A1A2E),
+                                    cursorColor = Color(0xFF1A1A2E)
                                 ),
                                 textStyle = TextStyle(
                                     fontSize = 18.sp,
-                                    color = Color.White,
+                                    color = Color(0xFF1A1A2E),
                                     fontWeight = FontWeight.Normal,
                                     textAlign = TextAlign.Center
                                 ),
@@ -307,16 +340,17 @@ fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", t
                                         color = Color(0x332C2C2C),
                                         shape = RoundedCornerShape(25.dp)
                                     ),
-                                value = amount.toString(),
+                                value = if (amount == 0.0) "" else amount.toString(),
                                 onValueChange = {
-                                    onEvent(Event.SetAmount(it.toDouble()))
+                                    val newAmount = it.toDoubleOrNull() ?: 0.0
+                                    onEvent(Event.SetAmount(newAmount))
                                 },
                                 placeholder = {
                                     Text(
                                         text = "Ingresa el monto",
                                         style = TextStyle(
                                             fontSize = 18.sp,
-                                            color = Color.White.copy(alpha = 0.6f),
+                                            color = Color(0xFF1A1A2E).copy(alpha = 0.6f),
                                             textAlign = TextAlign.Center
                                         ),
                                         modifier = Modifier.fillMaxWidth()
@@ -324,6 +358,7 @@ fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", t
                                 },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions.Default.copy(
+                                    keyboardType = KeyboardType.Decimal,
                                     imeAction = ImeAction.Done
                                 ),
                                 colors = TextFieldDefaults.colors(
@@ -332,13 +367,13 @@ fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", t
                                     disabledIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
                                     focusedIndicatorColor = Color.Transparent,
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White,
-                                    cursorColor = Color.White
+                                    focusedTextColor = Color(0xFF1A1A2E),
+                                    unfocusedTextColor = Color(0xFF1A1A2E),
+                                    cursorColor = Color(0xFF1A1A2E)
                                 ),
                                 textStyle = TextStyle(
                                     fontSize = 18.sp,
-                                    color = Color.White,
+                                    color = Color(0xFF1A1A2E),
                                     fontWeight = FontWeight.Normal,
                                     textAlign = TextAlign.Center
                                 ),
@@ -388,17 +423,36 @@ fun RecordDialog(openRecord: Boolean = true, transactionType: String ="Gasto", t
     }
 }
 
-
+@Preview(showBackground = true)
 @Composable
 fun CrudScreen (
-    allRecords: List<Record>,
-    openRecord: Boolean,
-    transactionType: String,
-    transactionDate: Date,
-    category: String,
-    description: String,
-    amount: Double,
-    onEvent: (Event) -> Unit
+    allRecords: List<Record> = listOf(
+        Record(id= null,
+            transactionDate = Date(),
+            transactionType = "ingreso",
+            category = "Auto",
+            description = "Gasolina",
+            amount = 100.00),
+        Record(id= null,
+            transactionDate = Date(),
+            transactionType = "ingreso",
+            category = "Auto",
+            description = "Gasolina",
+            amount = 100.00),
+        Record(id= null,
+            transactionDate = Date(),
+            transactionType = "ingreso",
+            category = "Auto",
+            description = "Gasolina",
+            amount = 100.00)
+    ),
+    openRecord: Boolean = false,
+    transactionType: String = "ingreso",
+    transactionDate: Date? = null,
+    category: String = "",
+    description: String = "",
+    amount: Double = 0.0,
+    onEvent: (Event) -> Unit = {}
 ) {
     Box(modifier = Modifier.fillMaxSize().padding(20.dp)){
         LazyColumn() {
@@ -408,23 +462,113 @@ fun CrudScreen (
                     headlineContent = {
                         Text(record.transactionDate.toString())},
                     supportingContent = {
-                        Text(record.category)
-                        Text(record.description)
-                        Text(record.amount.toString())
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(text = "$${record.amount.toString()}",
+                                fontSize = 16.sp)
+                            Text(record.category)
+                            Text("|")
+                            Text(record.description)
+                            }
                     },
                     trailingContent = {
-                        IconButton(onClick = {onEvent(Event.Load(record.id))}) {
-                            Icon(Icons.Rounded.Edit,
-                                contentDescription = "Editar record: ${record.id}")
+                        Row() {
+                            IconButton(onClick = {onEvent(Event.Load(record.id))}) {
+                                Icon(Icons.Rounded.Edit,
+                                    contentDescription = "Editar record: ${record.id}")
+                            }
+                            IconButton(onClick = {onEvent(Event.Delete(record.id))}) {
+                                Icon(Icons.Rounded.Delete,
+                                    contentDescription = "Borrar record: ${record.id}")
+                            }
                         }
-                        IconButton(onClick = {onEvent(Event.Delete(record.id))}) {
-                            Icon(Icons.Rounded.Delete,
-                                contentDescription = "Borrar record: ${record.id}")
-                        }
-                    }
-                )
+                    })
             }
         }
+    }
+    RecordDialog(
+        openRecord = openRecord,
+        transactionType = transactionType,
+        transactionDate = transactionDate,
+        category = category,
+        description = description,
+        amount = amount,
+        onEvent = onEvent
+    )
+}
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+@Composable
+fun CrudScreenSetup(
+    viewModel: RecordViewModel){
+    val allRecords by viewModel.all.observeAsState(listOf())
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(snackbarHostState) {
+        viewModel.eventFlow.collectLatest {
+            event ->
+            when(event){
+                Event.CloseRecord -> TODO()
+                is Event.Delete ->  TODO()
+                is Event.Load -> TODO()
+                Event.OpenRecord -> TODO()
+                Event.Save -> {
+                    scope.launch {
+                        snackbarHostState.showSnackbar(
+                            "Nota guardada"
+                        )
+                    }
+                }
+                is Event.SetTransactionType -> TODO()
+                is Event.SetTransactionDate -> TODO()
+                is Event.SetCategory -> TODO()
+                is Event.SetAmount -> TODO()
+                is Event.SetDescription -> TODO()
+            }
+        }
+    }
+        Scaffold(
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = {
+                        viewModel.onEvent(Event.Load(null))
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Agregar record"
+                    )
+                }
+            },
+            floatingActionButtonPosition = FabPosition.End,
+            snackbarHost = { SnackbarHost(snackbarHostState) }
+        ) {
+            CrudScreen(
+                allRecords = allRecords,
+                openRecord = viewModel.openRecord,
+                transactionType = viewModel.transactionType.value.transactionType,
+                transactionDate = viewModel.transactionDate.value.transactionDate,
+                category = viewModel.category.value.category,
+                description = viewModel.description.value.description,
+                amount = viewModel.amount.value.amount,
+                onEvent = {event-> viewModel.onEvent(event)}
+            )
+        }
+}
+
+@Composable
+fun Crud(){
+    val owner = LocalViewModelStoreOwner.current
+    owner?.let{
+        val viewModel: RecordViewModel = viewModel(
+            it,
+            "RecordViewModel",
+            RecordViewModelFactory(
+                LocalContext.current.applicationContext as Application
+            )
+        )
+        CrudScreenSetup(viewModel)
     }
 }
 
@@ -434,12 +578,4 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
         text = "Hello $name!",
         modifier = modifier
     )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    FinperAppTheme {
-        Greeting("Android")
-    }
 }

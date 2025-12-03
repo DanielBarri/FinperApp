@@ -82,7 +82,7 @@ class RecordViewModel(application: Application): ViewModel() {
             } else {
                 currentId = null
                 _transactionType.value = transactionType.value.copy(
-                    transactionType = ""
+                    transactionType = "ingreso"
                 )
                 _transactionDate.value = transactionDate.value.copy(
                     transactionDate = null
