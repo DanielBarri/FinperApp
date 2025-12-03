@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -80,7 +82,10 @@ import com.horrorcrux.finperapp.viewmodels.RecordViewModelFactory
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
+import kotlin.math.abs
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -340,9 +345,14 @@ fun RecordDialog(openRecord: Boolean = true,
                                         color = Color(0x332C2C2C),
                                         shape = RoundedCornerShape(25.dp)
                                     ),
-                                value = if (amount == 0.0) "" else amount.toString(),
+                                value = if (amount == 0.0) "" else abs(amount).toString(),
                                 onValueChange = {
-                                    val newAmount = it.toDoubleOrNull() ?: 0.0
+                                    val inputAmount = it.toDoubleOrNull()?: 0.0
+                                    val newAmount = if (transactionType == "gasto") {
+                                        -abs(inputAmount)
+                                    } else {
+                                        abs(inputAmount)
+                                    }
                                     onEvent(Event.SetAmount(newAmount))
                                 },
                                 placeholder = {
@@ -391,8 +401,8 @@ fun RecordDialog(openRecord: Boolean = true,
                                     .height(50.dp)
                                     .clip(RoundedCornerShape(25.dp)),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF0AB74C),
-                                    contentColor = Color.White
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                                 ),
                                 shape = RoundedCornerShape(25.dp)
                             ) {
@@ -400,16 +410,11 @@ fun RecordDialog(openRecord: Boolean = true,
                                     text = "Guardar")
                             }
                             Spacer(modifier = Modifier.height(10.dp))
-                            Button(
+                            OutlinedButton(
                                 onClick = {onEvent(Event.CloseRecord)},
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(50.dp)
-                                    .clip(RoundedCornerShape(25.dp)),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFFF94545),
-                                    contentColor = Color.White
-                                ),
+                                    .height(50.dp),
                                 shape = RoundedCornerShape(25.dp)
                             ) {
                                 Text(fontSize = 20.sp,
@@ -454,34 +459,80 @@ fun CrudScreen (
     amount: Double = 0.0,
     onEvent: (Event) -> Unit = {}
 ) {
-    Box(modifier = Modifier.fillMaxSize().padding(20.dp)){
-        LazyColumn() {
-            items(allRecords){
-                record ->
-                ListItem(
-                    headlineContent = {
-                        Text(record.transactionDate.toString())},
-                    supportingContent = {
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text(text = "$${record.amount.toString()}",
-                                fontSize = 16.sp)
-                            Text(record.category)
-                            Text("|")
-                            Text(record.description)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0x80D092F3),
+                        Color(0x75D092F3),
+                        Color(0x6B64B7E3)
+                    )
+                )
+            )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(15.dp)
+                .background(
+                    color = Color.White.copy(alpha = 0.4f),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .border(
+                    width = 1.dp,
+                    color = Color.White.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .padding(20.dp)
+        ) {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(allRecords) {
+                        record ->
+                    val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+                    ListItem(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White.copy(alpha = 0.5f)),
+                        headlineContent = {
+                            Text(record.transactionDate?.let { dateFormat.format(it) } ?: "No date")
+                        },
+                        supportingContent = {
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text(
+                                    text = "$${abs(record.amount)}",
+                                    fontSize = 16.sp,
+                                    color = if (record.transactionType == "ingreso") {
+                                        Color(0xFF2E7D32)
+                                    } else {
+                                        Color.Red
+                                    }
+                                )
+                                Text(record.category)
+                                Text("|")
+                                Text(record.description)
                             }
-                    },
-                    trailingContent = {
-                        Row() {
-                            IconButton(onClick = {onEvent(Event.Load(record.id))}) {
-                                Icon(Icons.Rounded.Edit,
-                                    contentDescription = "Editar record: ${record.id}")
+                        },
+                        trailingContent = {
+                            Row() {
+                                IconButton(onClick = { onEvent(Event.Load(record.id)) }) {
+                                    Icon(
+                                        Icons.Rounded.Edit,
+                                        contentDescription = "Editar record: ${record.id}"
+                                    )
+                                }
+                                IconButton(onClick = { onEvent(Event.Delete(record.id)) }) {
+                                    Icon(
+                                        Icons.Rounded.Delete,
+                                        contentDescription = "Borrar record: ${record.id}"
+                                    )
+                                }
                             }
-                            IconButton(onClick = {onEvent(Event.Delete(record.id))}) {
-                                Icon(Icons.Rounded.Delete,
-                                    contentDescription = "Borrar record: ${record.id}")
-                            }
-                        }
-                    })
+                        })
+                }
             }
         }
     }
@@ -533,7 +584,8 @@ fun CrudScreenSetup(
                 FloatingActionButton(
                     onClick = {
                         viewModel.onEvent(Event.Load(null))
-                    }
+                    },
+                    shape = CircleShape
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
@@ -541,7 +593,7 @@ fun CrudScreenSetup(
                     )
                 }
             },
-            floatingActionButtonPosition = FabPosition.End,
+            floatingActionButtonPosition = FabPosition.Center,
             snackbarHost = { SnackbarHost(snackbarHostState) }
         ) {
             CrudScreen(

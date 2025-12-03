@@ -4,7 +4,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
+import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -19,11 +23,15 @@ fun DatePickerComponent(
     )
 
     // Button to trigger the date picker
+    val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
     OutlinedButton(
         onClick = { showDatePicker = true },
         modifier = modifier
     ) {
-        Text(text = selectedDate?.toString() ?: "Select Date", fontSize = 18.sp)
+        Text(
+            text = selectedDate?.let { dateFormat.format(it) } ?: "Select Date",
+            fontSize = 18.sp
+        )
     }
 
     // Date picker dialog
@@ -33,7 +41,20 @@ fun DatePickerComponent(
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
-                        onDateSelected(Date(millis))
+                        // Convert UTC midnight to local date
+                        val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+                        calendar.timeInMillis = millis
+
+                        val localCalendar = Calendar.getInstance()
+                        localCalendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR))
+                        localCalendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH))
+                        localCalendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH))
+                        localCalendar.set(Calendar.HOUR_OF_DAY, 0)
+                        localCalendar.set(Calendar.MINUTE, 0)
+                        localCalendar.set(Calendar.SECOND, 0)
+                        localCalendar.set(Calendar.MILLISECOND, 0)
+
+                        onDateSelected(localCalendar.time)
                     }
                     showDatePicker = false
                 }) {

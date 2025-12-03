@@ -1,7 +1,9 @@
 package com.horrorcrux.finperapp.viewmodels
 
 import android.app.Application
+import android.util.Log
 import androidx.compose.runtime.State
+import kotlin.math.abs
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -106,6 +108,16 @@ class RecordViewModel(application: Application): ViewModel() {
                 _transactionType.value = transactionType.value.copy(
                     transactionType = event.transactionType
                 )
+                // Adjust amount sign based on transaction type
+                val currentAmount = _amount.value.amount
+                val newAmount = if (event.transactionType == "gasto") {
+                    -abs(currentAmount)
+                } else {
+                    abs(currentAmount)
+                }
+                _amount.value = amount.value.copy(
+                    amount = newAmount
+                )
             }
 
             is Event.SetTransactionDate -> {
@@ -153,6 +165,7 @@ class RecordViewModel(application: Application): ViewModel() {
             }
 
             is Event.Save -> {
+                Log.d("RecordViewModel", "Saving record - Type: ${_transactionType.value.transactionType}, Amount: ${_amount.value.amount}")
                 if(currentId != null){
                     repository.update(Record(
                         id = currentId,
