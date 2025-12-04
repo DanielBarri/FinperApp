@@ -15,25 +15,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DatePickerComponent(
     selectedDate: Date?,
-    onDateSelected: (Date?) -> Unit,
+    onDateSelected: (Date) -> Unit, // Changed to be non-nullable for clearer intent
     modifier: Modifier = Modifier
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
+
+    // Initialize the state with the selected date or today's date in UTC.
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = selectedDate?.time ?: System.currentTimeMillis()
     )
 
+    // Use a consistent formatter. Remember to handle locale.
+    val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
+
     // Button to trigger the date picker
-    val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
     OutlinedButton(
         onClick = { showDatePicker = true },
         modifier = modifier
@@ -49,25 +51,21 @@ fun DatePickerComponent(
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        // Convert UTC midnight to local date
-                        val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-                        calendar.timeInMillis = millis
-
-                        val localCalendar = Calendar.getInstance()
-                        localCalendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR))
-                        localCalendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH))
-                        localCalendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH))
-                        localCalendar.set(Calendar.HOUR_OF_DAY, 0)
-                        localCalendar.set(Calendar.MINUTE, 0)
-                        localCalendar.set(Calendar.SECOND, 0)
-                        localCalendar.set(Calendar.MILLISECOND, 0)
-
-                        onDateSelected(localCalendar.time)
-                    }
-                    showDatePicker = false
-                }) {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            // The selectedDateMillis is a UTC timestamp.
+                            // Simply create a Date object from it.
+                            // The Date object itself doesn't have a time zone, but when you
+                            // format it or convert it to a Calendar, it will use the
+                            // system's default time zone.
+                            onDateSelected(Date(millis))
+                        }
+                        showDatePicker = false
+                    },
+                    // Ensure the button is only enabled when a date is selected.
+                    enabled = datePickerState.selectedDateMillis != null
+                ) {
                     Text("OK")
                 }
             },

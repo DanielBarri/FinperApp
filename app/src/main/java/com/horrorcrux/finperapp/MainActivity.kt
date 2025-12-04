@@ -511,7 +511,7 @@ fun CrudScreen (
                             }
                         },
                         trailingContent = {
-                            Row() {
+                            Row {
                                 IconButton(onClick = { onEvent(Event.Load(record.id)) }) {
                                     Icon(
                                         Icons.Rounded.Edit,
@@ -618,10 +618,4 @@ fun Crud(){
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+
