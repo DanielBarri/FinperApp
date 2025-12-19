@@ -49,7 +49,7 @@ fun DatePickerComponent(
     // Date picker dialog
     if (showDatePicker) {
         DatePickerDialog(
-            onDismissRequest = { },
+            onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -61,6 +61,7 @@ fun DatePickerComponent(
                             // system's default time zone.
                             onDateSelected(Date(millis))
                         }
+                        showDatePicker = false
                     },
                     // Ensure the button is only enabled when a date is selected.
                     enabled = datePickerState.selectedDateMillis != null
@@ -69,7 +70,7 @@ fun DatePickerComponent(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { }) {
+                TextButton(onClick = { showDatePicker = false }) {
                     Text("Cancelar")
                 }
             }
