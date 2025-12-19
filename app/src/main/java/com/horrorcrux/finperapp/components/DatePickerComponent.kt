@@ -33,7 +33,7 @@ fun DatePickerComponent(
     )
 
     // Use a consistent formatter with Spanish locale
-    val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale("es", "ES")) }
+    val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.forLanguageTag("es-ES")) }
 
     // Button to trigger the date picker
     OutlinedButton(
@@ -49,7 +49,7 @@ fun DatePickerComponent(
     // Date picker dialog
     if (showDatePicker) {
         DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
+            onDismissRequest = { },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -61,7 +61,6 @@ fun DatePickerComponent(
                             // system's default time zone.
                             onDateSelected(Date(millis))
                         }
-                        showDatePicker = false
                     },
                     // Ensure the button is only enabled when a date is selected.
                     enabled = datePickerState.selectedDateMillis != null
@@ -70,7 +69,7 @@ fun DatePickerComponent(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
+                TextButton(onClick = { }) {
                     Text("Cancelar")
                 }
             }
