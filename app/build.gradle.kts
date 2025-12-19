@@ -2,14 +2,12 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("kotlin-kapt")
+    alias(libs.plugins.ksp)
 }
 
 android {
     namespace = "com.horrorcrux.finperapp"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.horrorcrux.finperapp"
@@ -42,14 +40,12 @@ android {
     }
 }
 
-kapt {
-    arguments {
-        arg("room.schemaLocation", "$projectDir/schemas")
-    }
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
-val navVersion = "2.5.3"
-val roomVersion = "2.6.1"
+val navVersion = "2.9.6"
+val roomVersion = "2.8.4"
 val runtimeLivedataVersion = "1.2.1"
 
 dependencies {
@@ -70,18 +66,18 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     // Navigation
-    implementation("androidx.navigation:navigation-compose:$navVersion")
+    implementation(libs.androidx.navigation.compose)
 
     // Room
-    implementation("androidx.room:room-runtime:$roomVersion")
-    implementation("androidx.room:room-ktx:$roomVersion")
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.room.ktx)
 
     // LiveData + Compose Runtime
-    implementation("androidx.compose.runtime:runtime-livedata:$runtimeLivedataVersion")
+    implementation(libs.androidx.compose.runtime.livedata)
 
     // Test monitor
-    implementation("androidx.test:monitor:1.5.0")
+    implementation(libs.androidx.monitor)
 
-    // Room compiler con kapt (Kotlin)
-    kapt("androidx.room:room-compiler:$roomVersion")
+    // Room compiler with KSP
+    ksp(libs.room.compiler)
 }
