@@ -9,20 +9,20 @@ import java.util.Date
 data class Record(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id")
-    var id: Int? = null,
+    val id: Int? = null,
 
     @ColumnInfo(name = "transactionType")
-    var transactionType: String,
+    val transactionType: TransactionType,
 
     @ColumnInfo(name = "date")
-    var transactionDate: Date?,
+    val transactionDate: Date?,
 
     @ColumnInfo(name= "category")
-    var category: String,
+    val category: String,
 
     @ColumnInfo(name = "description")
-    var description: String,
+    val description: String,
 
     @ColumnInfo(name = "amount")
-    var amount: Double,
+    val amount: Double,
 )

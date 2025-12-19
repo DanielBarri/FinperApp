@@ -10,13 +10,13 @@ import com.horrorcrux.finperapp.db.models.Record
 @Dao
 interface RecordsDao {
     @Insert
-    fun insert(record: Record)
+    suspend fun insert(record: Record)
 
     @Update
-    fun update(record: Record)
+    suspend fun update(record: Record)
 
     @Query("DELETE FROM records WHERE id = :id")
-    fun delete(id: Int)
+    suspend fun delete(id: Int)
 
     @Query("SELECT * FROM records")
     fun all() : LiveData<List<Record>>

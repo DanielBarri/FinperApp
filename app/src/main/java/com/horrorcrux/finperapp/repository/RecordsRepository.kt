@@ -1,25 +1,33 @@
 package com.horrorcrux.finperapp.repository
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import com.horrorcrux.finperapp.db.RecordsDao
 import com.horrorcrux.finperapp.db.models.Record
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class RecordsRepository(private val recordsDao: RecordsDao) {
 
-    private val coroutineScope = CoroutineScope(Dispatchers.Main)
-
-    fun insert(record: Record) {
-        coroutineScope.launch(Dispatchers.IO){
-            recordsDao.insert(record)
+    suspend fun insert(record: Record) {
+        withContext(Dispatchers.IO) {
+            try {
+                recordsDao.insert(record)
+            } catch (e: Exception) {
+                Log.e("RecordsRepository", "Error inserting record", e)
+                throw e
+            }
         }
     }
 
-    fun update(record: Record) {
-        coroutineScope.launch(Dispatchers.IO){
-            recordsDao.update(record)
+    suspend fun update(record: Record) {
+        withContext(Dispatchers.IO) {
+            try {
+                recordsDao.update(record)
+            } catch (e: Exception) {
+                Log.e("RecordsRepository", "Error updating record", e)
+                throw e
+            }
         }
     }
 
@@ -28,12 +36,24 @@ class RecordsRepository(private val recordsDao: RecordsDao) {
     }
 
     suspend fun findById(id: Int) : Record {
-        return recordsDao.findById(id)
+        return withContext(Dispatchers.IO) {
+            try {
+                recordsDao.findById(id)
+            } catch (e: Exception) {
+                Log.e("RecordsRepository", "Error finding record by id", e)
+                throw e
+            }
+        }
     }
 
-    fun delete(id: Int) {
-        coroutineScope.launch(Dispatchers.IO) {
-            recordsDao.delete(id)
+    suspend fun delete(id: Int) {
+        withContext(Dispatchers.IO) {
+            try {
+                recordsDao.delete(id)
+            } catch (e: Exception) {
+                Log.e("RecordsRepository", "Error deleting record", e)
+                throw e
+            }
         }
     }
 }

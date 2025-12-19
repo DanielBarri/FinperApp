@@ -42,6 +42,12 @@ android {
     }
 }
 
+kapt {
+    arguments {
+        arg("room.schemaLocation", "$projectDir/schemas")
+    }
+}
+
 val navVersion = "2.5.3"
 val roomVersion = "2.6.1"
 val runtimeLivedataVersion = "1.2.1"

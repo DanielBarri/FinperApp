@@ -1,3 +1,40 @@
 <resources>
     <string name="app_name">FinperApp</string>
+
+    <!-- Dialog titles and messages -->
+    <string name="delete_confirmation_title">Confirmar eliminación</string>
+    <string name="delete_confirmation_message">¿Estás seguro de que deseas eliminar este registro? Esta acción no se puede deshacer.</string>
+
+    <!-- Transaction form labels -->
+    <string name="record_form_title">Nueva Transacción</string>
+    <string name="transaction_type_label">Tipo de Transacción</string>
+    <string name="transaction_type_income">Ingreso</string>
+    <string name="transaction_type_expense">Gasto</string>
+    <string name="date_label">Fecha</string>
+    <string name="category_label">Categoría</string>
+    <string name="category_hint">Ingresa la categoría</string>
+    <string name="description_label">Descripción</string>
+    <string name="description_hint">Ingresa la descripción</string>
+    <string name="amount_label">Monto</string>
+    <string name="amount_hint">Ingresa el monto</string>
+
+    <!-- Buttons -->
+    <string name="save_button">Guardar</string>
+    <string name="cancel_button">Cancelar</string>
+    <string name="delete_button">Eliminar</string>
+    <string name="ok_button">OK</string>
+
+    <!-- Content descriptions -->
+    <string name="add_record_description">Agregar record</string>
+    <string name="edit_record_description">Editar record: %1$d</string>
+    <string name="delete_record_description">Borrar record: %1$d</string>
+
+    <!-- Messages -->
+    <string name="record_saved">Nota guardada</string>
+    <string name="no_date">No date</string>
+
+    <!-- Error messages -->
+    <string name="error_loading_record">Error al cargar el registro</string>
+    <string name="error_deleting_record">Error al eliminar el registro</string>
+    <string name="error_saving_record">Error al guardar el registro</string>
 </resources>

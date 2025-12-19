@@ -32,8 +32,8 @@ fun DatePickerComponent(
         initialSelectedDateMillis = selectedDate?.time ?: System.currentTimeMillis()
     )
 
-    // Use a consistent formatter. Remember to handle locale.
-    val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
+    // Use a consistent formatter with Spanish locale
+    val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale("es", "ES")) }
 
     // Button to trigger the date picker
     OutlinedButton(
@@ -41,7 +41,7 @@ fun DatePickerComponent(
         modifier = modifier
     ) {
         Text(
-            text = selectedDate?.let { dateFormat.format(it) } ?: "Select Date",
+            text = selectedDate?.let { dateFormat.format(it) } ?: "Seleccionar Fecha",
             fontSize = 18.sp
         )
     }
@@ -66,12 +66,12 @@ fun DatePickerComponent(
                     // Ensure the button is only enabled when a date is selected.
                     enabled = datePickerState.selectedDateMillis != null
                 ) {
-                    Text("OK")
+                    Text("Aceptar")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancel")
+                    Text("Cancelar")
                 }
             }
         ) {

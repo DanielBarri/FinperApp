@@ -29,6 +29,7 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -36,6 +37,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -52,6 +55,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -70,7 +74,8 @@ import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.horrorcrux.finperapp.components.DatePickerComponent
 import com.horrorcrux.finperapp.db.models.Record
-import com.horrorcrux.finperapp.ui.theme.FinperAppTheme
+import com.horrorcrux.finperapp.db.models.TransactionType
+import com.horrorcrux.finperapp.ui.theme.*
 import com.horrorcrux.finperapp.viewmodels.Event
 import com.horrorcrux.finperapp.viewmodels.RecordViewModel
 import com.horrorcrux.finperapp.viewmodels.RecordViewModelFactory
@@ -99,14 +104,50 @@ class MainActivity : ComponentActivity() {
 }
 
 //Definir composables de mi app
+@Composable
+fun DeleteConfirmationDialog(
+    showDialog: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    if (showDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = onDismiss,
+            title = {
+                Text(text = stringResource(R.string.delete_confirmation_title))
+            },
+            text = {
+                Text(text = stringResource(R.string.delete_confirmation_message))
+            },
+            confirmButton = {
+                Button(
+                    onClick = onConfirm,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Red
+                    )
+                ) {
+                    Text(stringResource(R.string.delete_button))
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.cancel_button))
+                }
+            }
+        )
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun RecordDialog(openRecord: Boolean = true,
-                 transactionType: String = "ingreso",
+                 transactionType: TransactionType = TransactionType.INCOME,
                  transactionDate: Date? = null,
                  category: String = "",
                  description: String ="",
                  amount: Double = 0.0,
+                 isFormValid: Boolean = true,
+                 isLoading: Boolean = false,
                  onEvent: (Event) -> Unit ={}) {
     if(openRecord){
         Dialog(
@@ -117,9 +158,9 @@ fun RecordDialog(openRecord: Boolean = true,
                 .fillMaxSize()
                 .background(brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color(0x80D092F3),
-                        Color(0x75D092F3),
-                        Color(0x6B64B7E3)
+                        GradientPurpleTop,
+                        GradientPurpleMid,
+                        GradientBlueBottom
                     )
                 )),
                 ) {
@@ -128,9 +169,9 @@ fun RecordDialog(openRecord: Boolean = true,
                     .fillMaxSize()
                     .background(brush = Brush.verticalGradient(
                         colors = listOf(
-                            Color(0x80D092F3),
-                            Color(0x75D092F3),
-                            Color(0x6B64B7E3)
+                            GradientPurpleTop,
+                            GradientPurpleMid,
+                            GradientBlueBottom
                         )
                     ))
                 ){
@@ -149,64 +190,64 @@ fun RecordDialog(openRecord: Boolean = true,
                             modifier = Modifier.padding(40.dp),
                             horizontalAlignment = Alignment.Start
                         ) {
+                            // Title
                             Text(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                fontFamily = FontFamily.SansSerif,
-                                fontSize = 20.sp,
-                                text = "Tipo de Transacción"
+                                text = stringResource(R.string.record_form_title),
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextFieldText,
+                                modifier = Modifier.fillMaxWidth()
                             )
-                            Spacer(modifier = Modifier.height(5.dp))
+                            Spacer(modifier = Modifier.height(20.dp))
+
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.Top
                             ) {
                                 Button(
-                                    onClick = {onEvent(Event.SetTransactionType("ingreso"))},
+                                    onClick = {onEvent(Event.SetTransactionType(TransactionType.INCOME))},
                                     modifier = Modifier
                                         .weight(1f)
                                         .height(50.dp)
                                         .clip(RoundedCornerShape(25.dp)),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF0AB74C).copy(
-                                            alpha = if (transactionType == "ingreso") 1f else 0.4f
+                                        containerColor = IncomeGreen.copy(
+                                            alpha = if (transactionType == TransactionType.INCOME) 1f else 0.4f
                                         ),
                                         contentColor = Color.White
                                     ),
                                     shape = RoundedCornerShape(25.dp)
                                 ) {
-                                    Text(fontSize = 20.sp,
-                                        text = "Ingreso")
+                                    Text(
+                                        fontSize = 20.sp,
+                                        text = stringResource(R.string.transaction_type_income)
+                                    )
                                 }
                                 Spacer(modifier = Modifier.width(20.dp))
                                 Button(
-                                    onClick = {onEvent(Event.SetTransactionType("gasto")) },
+                                    onClick = {onEvent(Event.SetTransactionType(TransactionType.EXPENSE)) },
                                     modifier = Modifier
                                         .weight(1f)
                                         .height(50.dp)
                                         .clip(RoundedCornerShape(25.dp)),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFFF94545).copy(
-                                            alpha = if (transactionType == "gasto") 1f else 0.4f
+                                        containerColor = ExpenseRed.copy(
+                                            alpha = if (transactionType == TransactionType.EXPENSE) 1f else 0.4f
                                         ),
                                         contentColor = Color.White
                                     ),
                                     shape = RoundedCornerShape(25.dp)
                                 ) {
-                                    Text(fontSize = 20.sp,
-                                        text = "Gasto")
+                                    Text(
+                                        fontSize = 20.sp,
+                                        text = stringResource(R.string.transaction_type_expense)
+                                    )
                                 }
                             }
 
                             Spacer(modifier = Modifier.height(20.dp))
 
-                            Text(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                fontFamily = FontFamily.SansSerif,
-                                fontSize = 20.sp,
-                                text = "Fecha"
-                            )
+
                             Spacer(modifier = Modifier.height(5.dp))
                             DatePickerComponent(modifier = Modifier.fillMaxWidth().height(50.dp),
                                 selectedDate = transactionDate,
@@ -215,149 +256,133 @@ fun RecordDialog(openRecord: Boolean = true,
                                 }
                             )
                             Spacer(modifier = Modifier.height(20.dp))
-                            Text(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                fontFamily = FontFamily.SansSerif,
-                                fontSize = 20.sp,
-                                text = "Categoría"
-                            )
-                            Spacer(modifier = Modifier.height(5.dp))
-                            TextField(
+                            OutlinedTextField(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(50.dp)
-                                    .background(
-                                        color = Color(0x332C2C2C),
-                                        shape = RoundedCornerShape(25.dp)
-                                    ),
+                                    .height(60.dp),
                                 value = category,
                                 onValueChange = {
                                     onEvent(Event.SetCategory(it))
                                 },
+                                label = {
+                                    Text(
+                                        text = stringResource(R.string.category_label),
+                                        fontSize = 16.sp,
+                                        modifier = Modifier.background(Color.Transparent)
+                                    )
+                                },
                                 placeholder = {
                                     Text(
-                                        text = "Ingresa la categoría",
+                                        text = stringResource(R.string.category_hint),
                                         style = TextStyle(
-                                            fontSize = 18.sp,
-                                            color = Color(0xFF1A1A2E).copy(alpha = 0.6f),
-                                            textAlign = TextAlign.Center
-                                        ),
-                                        modifier = Modifier.fillMaxWidth()
+                                            fontSize = 16.sp,
+                                            color = TextFieldText.copy(alpha = 0.6f)
+                                        )
                                     )
                                 },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions.Default.copy(
                                     imeAction = ImeAction.Done
                                 ),
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    disabledIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    focusedTextColor = Color(0xFF1A1A2E),
-                                    unfocusedTextColor = Color(0xFF1A1A2E),
-                                    cursorColor = Color(0xFF1A1A2E)
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor = TextFieldBackground,
+                                    unfocusedContainerColor = TextFieldBackground,
+                                    focusedBorderColor = TextFieldText,
+                                    unfocusedBorderColor = TextFieldText.copy(alpha = 0.5f),
+                                    focusedTextColor = TextFieldText,
+                                    unfocusedTextColor = TextFieldText,
+                                    cursorColor = TextFieldText,
+                                    focusedLabelColor = TextFieldText,
+                                    unfocusedLabelColor = TextFieldText.copy(alpha = 0.7f)
                                 ),
                                 textStyle = TextStyle(
-                                    fontSize = 18.sp,
-                                    color = Color(0xFF1A1A2E),
-                                    fontWeight = FontWeight.Normal,
-                                    textAlign = TextAlign.Center
+                                    fontSize = 16.sp,
+                                    color = TextFieldText,
+                                    fontWeight = FontWeight.Normal
                                 ),
                                 shape = RoundedCornerShape(25.dp)
                             )
                             Spacer(modifier = Modifier.height(20.dp))
-                            Text(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                fontFamily = FontFamily.SansSerif,
-                                fontSize = 20.sp,
-                                text = "Descripción"
-                            )
-                            Spacer(modifier = Modifier.height(5.dp))
-                            TextField(
+                            OutlinedTextField(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(50.dp)
-                                    .background(
-                                        color = Color(0x332C2C2C),
-                                        shape = RoundedCornerShape(25.dp)
-                                    ),
+                                    .height(60.dp),
                                 value = description,
                                 onValueChange = {
                                     onEvent(Event.SetDescription(it))
                                 },
+                                label = {
+                                    Text(
+                                        text = stringResource(R.string.description_label),
+                                        fontSize = 16.sp,
+                                        modifier = Modifier.background(Color.Transparent)
+                                    )
+                                },
                                 placeholder = {
                                     Text(
-                                        text = "Ingresa la descripción",
+                                        text = stringResource(R.string.description_hint),
                                         style = TextStyle(
-                                            fontSize = 18.sp,
-                                            color = Color(0xFF1A1A2E).copy(alpha = 0.6f),
-                                            textAlign = TextAlign.Center
-                                        ),
-                                        modifier = Modifier.fillMaxWidth()
+                                            fontSize = 16.sp,
+                                            color = TextFieldText.copy(alpha = 0.6f)
+                                        )
                                     )
                                 },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions.Default.copy(
                                     imeAction = ImeAction.Done
                                 ),
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    disabledIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    focusedTextColor = Color(0xFF1A1A2E),
-                                    unfocusedTextColor = Color(0xFF1A1A2E),
-                                    cursorColor = Color(0xFF1A1A2E)
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor = TextFieldBackground,
+                                    unfocusedContainerColor = TextFieldBackground,
+                                    focusedBorderColor = TextFieldText,
+                                    unfocusedBorderColor = TextFieldText.copy(alpha = 0.5f),
+                                    focusedTextColor = TextFieldText,
+                                    unfocusedTextColor = TextFieldText,
+                                    cursorColor = TextFieldText,
+                                    focusedLabelColor = TextFieldText,
+                                    unfocusedLabelColor = TextFieldText.copy(alpha = 0.7f)
                                 ),
                                 textStyle = TextStyle(
-                                    fontSize = 18.sp,
-                                    color = Color(0xFF1A1A2E),
-                                    fontWeight = FontWeight.Normal,
-                                    textAlign = TextAlign.Center
+                                    fontSize = 16.sp,
+                                    color = TextFieldText,
+                                    fontWeight = FontWeight.Normal
                                 ),
                                 shape = RoundedCornerShape(25.dp)
                             )
                             Spacer(modifier = Modifier.height(20.dp))
-                            Text(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                fontFamily = FontFamily.SansSerif,
-                                fontSize = 20.sp,
-                                text = "Monto"
-                            )
-                            Spacer(modifier = Modifier.height(5.dp))
-                            TextField(
+                            // Amount field - always displays positive value for user input
+                            // The sign (positive/negative) is determined by transaction type
+                            OutlinedTextField(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(50.dp)
-                                    .background(
-                                        color = Color(0x332C2C2C),
-                                        shape = RoundedCornerShape(25.dp)
-                                    ),
+                                    .height(60.dp),
+                                // Display absolute value (always positive for user)
                                 value = if (amount == 0.0) "" else abs(amount).toString(),
                                 onValueChange = {
                                     val inputAmount = it.toDoubleOrNull()?: 0.0
-                                    val newAmount = if (transactionType == "gasto") {
+                                    // Apply sign based on transaction type
+                                    // Income = positive, Expense = negative
+                                    val newAmount = if (transactionType == TransactionType.EXPENSE) {
                                         -abs(inputAmount)
                                     } else {
                                         abs(inputAmount)
                                     }
                                     onEvent(Event.SetAmount(newAmount))
                                 },
+                                label = {
+                                    Text(
+                                        text = stringResource(R.string.amount_label),
+                                        fontSize = 16.sp,
+                                        modifier = Modifier.background(Color.Transparent)
+                                    )
+                                },
                                 placeholder = {
                                     Text(
-                                        text = "Ingresa el monto",
+                                        text = stringResource(R.string.amount_hint),
                                         style = TextStyle(
-                                            fontSize = 18.sp,
-                                            color = Color(0xFF1A1A2E).copy(alpha = 0.6f),
-                                            textAlign = TextAlign.Center
-                                        ),
-                                        modifier = Modifier.fillMaxWidth()
+                                            fontSize = 16.sp,
+                                            color = TextFieldText.copy(alpha = 0.6f)
+                                        )
                                     )
                                 },
                                 singleLine = true,
@@ -365,21 +390,21 @@ fun RecordDialog(openRecord: Boolean = true,
                                     keyboardType = KeyboardType.Decimal,
                                     imeAction = ImeAction.Done
                                 ),
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    disabledIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    focusedTextColor = Color(0xFF1A1A2E),
-                                    unfocusedTextColor = Color(0xFF1A1A2E),
-                                    cursorColor = Color(0xFF1A1A2E)
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor = TextFieldBackground,
+                                    unfocusedContainerColor = TextFieldBackground,
+                                    focusedBorderColor = TextFieldText,
+                                    unfocusedBorderColor = TextFieldText.copy(alpha = 0.5f),
+                                    focusedTextColor = TextFieldText,
+                                    unfocusedTextColor = TextFieldText,
+                                    cursorColor = TextFieldText,
+                                    focusedLabelColor = TextFieldText,
+                                    unfocusedLabelColor = TextFieldText.copy(alpha = 0.7f)
                                 ),
                                 textStyle = TextStyle(
-                                    fontSize = 18.sp,
-                                    color = Color(0xFF1A1A2E),
-                                    fontWeight = FontWeight.Normal,
-                                    textAlign = TextAlign.Center
+                                    fontSize = 16.sp,
+                                    color = TextFieldText,
+                                    fontWeight = FontWeight.Normal
                                 ),
                                 shape = RoundedCornerShape(25.dp)
                             )
@@ -390,6 +415,7 @@ fun RecordDialog(openRecord: Boolean = true,
                         {
                             Button(
                                 onClick = {onEvent(Event.Save)},
+                                enabled = isFormValid,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(50.dp)
@@ -401,7 +427,7 @@ fun RecordDialog(openRecord: Boolean = true,
                                 shape = RoundedCornerShape(25.dp)
                             ) {
                                 Text(fontSize = 20.sp,
-                                    text = "Guardar")
+                                    text = stringResource(R.string.save_button))
                             }
                             Spacer(modifier = Modifier.height(10.dp))
                             OutlinedButton(
@@ -412,8 +438,22 @@ fun RecordDialog(openRecord: Boolean = true,
                                 shape = RoundedCornerShape(25.dp)
                             ) {
                                 Text(fontSize = 20.sp,
-                                    text = "Cancelar")
+                                    text = stringResource(R.string.cancel_button))
                             }
+                        }
+                    }
+
+                    // Loading overlay
+                    if (isLoading) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.3f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = Color.White
+                            )
                         }
                     }
                 }
@@ -428,29 +468,32 @@ fun CrudScreen (
     allRecords: List<Record> = listOf(
         Record(id= null,
             transactionDate = Date(),
-            transactionType = "ingreso",
+            transactionType = TransactionType.INCOME,
             category = "Auto",
             description = "Gasolina",
             amount = 100.00),
         Record(id= null,
             transactionDate = Date(),
-            transactionType = "ingreso",
+            transactionType = TransactionType.INCOME,
             category = "Auto",
             description = "Gasolina",
             amount = 100.00),
         Record(id= null,
             transactionDate = Date(),
-            transactionType = "ingreso",
+            transactionType = TransactionType.INCOME,
             category = "Auto",
             description = "Gasolina",
             amount = 100.00)
     ),
     openRecord: Boolean = false,
-    transactionType: String = "ingreso",
+    transactionType: TransactionType = TransactionType.INCOME,
     transactionDate: Date? = null,
     category: String = "",
     description: String = "",
     amount: Double = 0.0,
+    isFormValid: Boolean = true,
+    isLoading: Boolean = false,
+    recordToDelete: Int? = null,
     onEvent: (Event) -> Unit = {}
 ) {
     Box(
@@ -459,9 +502,9 @@ fun CrudScreen (
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color(0x80D092F3),
-                        Color(0x75D092F3),
-                        Color(0x6B64B7E3)
+                        GradientPurpleTop,
+                        GradientPurpleMid,
+                        GradientBlueBottom
                     )
                 )
             )
@@ -492,17 +535,17 @@ fun CrudScreen (
                             .clip(RoundedCornerShape(12.dp))
                             .background(Color.White.copy(alpha = 0.5f)),
                         headlineContent = {
-                            Text(record.transactionDate?.let { dateFormat.format(it) } ?: "No date")
+                            Text(record.transactionDate?.let { dateFormat.format(it) } ?: stringResource(R.string.no_date))
                         },
                         supportingContent = {
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 Text(
                                     text = "$${abs(record.amount)}",
                                     fontSize = 16.sp,
-                                    color = if (record.transactionType == "ingreso") {
-                                        Color(0xFF2E7D32)
+                                    color = if (record.transactionType == TransactionType.INCOME) {
+                                        IncomeAmountGreen
                                     } else {
-                                        Color.Red
+                                        ExpenseRed
                                     }
                                 )
                                 Text(record.category)
@@ -515,13 +558,13 @@ fun CrudScreen (
                                 IconButton(onClick = { onEvent(Event.Load(record.id)) }) {
                                     Icon(
                                         Icons.Rounded.Edit,
-                                        contentDescription = "Editar record: ${record.id}"
+                                        contentDescription = stringResource(R.string.edit_record_description, record.id ?: 0)
                                     )
                                 }
-                                IconButton(onClick = { onEvent(Event.Delete(record.id)) }) {
+                                IconButton(onClick = { onEvent(Event.ShowDeleteConfirmation(record.id)) }) {
                                     Icon(
                                         Icons.Rounded.Delete,
-                                        contentDescription = "Borrar record: ${record.id}"
+                                        contentDescription = stringResource(R.string.delete_record_description, record.id ?: 0)
                                     )
                                 }
                             }
@@ -537,10 +580,17 @@ fun CrudScreen (
         category = category,
         description = description,
         amount = amount,
+        isFormValid = isFormValid,
+        isLoading = isLoading,
         onEvent = onEvent
     )
+
+    DeleteConfirmationDialog(
+        showDialog = recordToDelete != null,
+        onConfirm = { onEvent(Event.ConfirmDelete) },
+        onDismiss = { onEvent(Event.CancelDelete) }
+    )
 }
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun CrudScreenSetup(
     viewModel: RecordViewModel){
@@ -550,26 +600,27 @@ fun CrudScreenSetup(
 
     val scope = rememberCoroutineScope()
 
+    val context = LocalContext.current
+
     LaunchedEffect(snackbarHostState) {
         viewModel.eventFlow.collectLatest {
             event ->
             when(event){
-                Event.CloseRecord -> TODO()
-                is Event.Delete ->  TODO()
-                is Event.Load -> TODO()
-                Event.OpenRecord -> TODO()
                 Event.Save -> {
+                    val message = context.getString(R.string.record_saved)
+                    scope.launch {
+                        snackbarHostState.showSnackbar(message)
+                    }
+                }
+                is Event.ShowError -> {
                     scope.launch {
                         snackbarHostState.showSnackbar(
-                            "Nota guardada"
+                            event.message
                         )
                     }
                 }
-                is Event.SetTransactionType -> TODO()
-                is Event.SetTransactionDate -> TODO()
-                is Event.SetCategory -> TODO()
-                is Event.SetAmount -> TODO()
-                is Event.SetDescription -> TODO()
+                // Other events don't need UI side effects
+                else -> { /* No action needed */ }
             }
         }
     }
@@ -583,23 +634,28 @@ fun CrudScreenSetup(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Agregar record"
+                        contentDescription = stringResource(R.string.add_record_description)
                     )
                 }
             },
             floatingActionButtonPosition = FabPosition.Center,
             snackbarHost = { SnackbarHost(snackbarHostState) }
-        ) {
-            CrudScreen(
-                allRecords = allRecords,
-                openRecord = viewModel.openRecord,
-                transactionType = viewModel.transactionType.value.transactionType,
-                transactionDate = viewModel.transactionDate.value.transactionDate,
-                category = viewModel.category.value.category,
-                description = viewModel.description.value.description,
-                amount = viewModel.amount.value.amount,
-                onEvent = {event-> viewModel.onEvent(event)}
-            )
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)) {
+                CrudScreen(
+                    allRecords = allRecords,
+                    openRecord = viewModel.openRecord,
+                    transactionType = viewModel.transactionType.value.transactionType,
+                    transactionDate = viewModel.transactionDate.value.transactionDate,
+                    category = viewModel.category.value.category,
+                    description = viewModel.description.value.description,
+                    amount = viewModel.amount.value.amount,
+                    isFormValid = viewModel.isFormValid,
+                    isLoading = viewModel.isLoading,
+                    recordToDelete = viewModel.recordToDelete,
+                    onEvent = {event-> viewModel.onEvent(event)}
+                )
+            }
         }
 }
 
